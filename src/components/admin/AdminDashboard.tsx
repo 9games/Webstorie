@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import type { StoryContent, StorySummary } from '@/lib/types';
-import { generateStoryAction, publishStoryAction } from '@/app/admin/actions';
+import { generateStoryAction, publishStoryAction } from '@/app/admin/actions.tsx';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
