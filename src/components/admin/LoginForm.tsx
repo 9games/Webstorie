@@ -39,6 +39,7 @@ export default function LoginForm() {
       setIsSubmitting(false);
     } else {
        router.refresh();
+       // We don't need to set isSubmitting to false here because the refresh will unmount the component.
     }
   }
 
