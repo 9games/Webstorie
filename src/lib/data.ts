@@ -1,21 +1,26 @@
-import fs from 'fs/promises';
-import path from 'path';
 import type { StorySummary } from '@/lib/types';
-
-const storiesFilePath = path.join(process.cwd(), 'data', 'stories.json');
+import { supabase } from '@/lib/supabase';
 
 export async function getPublishedStories(): Promise<StorySummary[]> {
   try {
-    const data = await fs.readFile(storiesFilePath, 'utf-8');
-    const stories = JSON.parse(data);
-    // Sort by most recent
-    return stories.sort((a: StorySummary, b: StorySummary) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      await fs.writeFile(storiesFilePath, '[]', 'utf-8');
-      return [];
+    const { data: stories, error } = await supabase
+      .from('stories')
+      .select('slug, title, excerpt, coverImageUrl, publishedAt')
+      .order('publishedAt', { ascending: false });
+
+    if (error) {
+      throw error;
     }
-    console.error("Error reading stories.json:", error);
+    
+    // Ensure all required fields are present
+    const validStories = stories.filter(story => 
+        story.slug && story.title && story.coverImageUrl && story.publishedAt
+    );
+
+    return validStories as StorySummary[];
+
+  } catch (error) {
+    console.error("Error fetching stories from Supabase:", error);
     return [];
   }
 }

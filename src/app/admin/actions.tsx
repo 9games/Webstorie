@@ -7,7 +7,7 @@ import path from 'path';
 import { generateStoryContent, type GenerateStoryContentInput } from '@/ai/flows/generate-story-content';
 import type { StoryContent, StorySummary } from '@/lib/types';
 import { slugify, hashCode } from '@/lib/utils';
-import { getPublishedStories } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { renderAmpStory } from '@/lib/amp-renderer';
 
 // --- Story Generation Actions ---
@@ -44,27 +44,28 @@ export async function publishStoryAction(storyData: StoryContent): Promise<{ suc
     const storyDir = path.join(process.cwd(), 'public', 'stories', slug);
     await fs.mkdir(storyDir, { recursive: true });
     
-    // Save full story JSON for potential future use (e.g., editing)
-    await fs.writeFile(path.join(storyDir, 'story.json'), JSON.stringify(finalStory, null, 2));
+    // Save full story JSON for potential future use (e.g., editing) - This part is replaced by Supabase
+    // await fs.writeFile(path.join(storyDir, 'story.json'), JSON.stringify(finalStory, null, 2));
 
     const ampHtml = renderAmpStory(finalStory);
     await fs.writeFile(path.join(storyDir, 'index.html'), ampHtml);
 
-    // 2. Update the main stories.json list
-    const stories = await getPublishedStories();
-    const newStorySummary: StorySummary = {
-      slug,
-      title: finalStory.title,
-      excerpt: finalStory.excerpt,
-      coverImageUrl: finalStory.coverImageUrl!,
-      publishedAt,
-    };
+    // 2. Save story metadata to Supabase
+    const { error: supabaseError } = await supabase
+      .from('stories')
+      .upsert({
+        slug,
+        title: finalStory.title,
+        excerpt: finalStory.excerpt,
+        cover_image_prompt: finalStory.cover_image_prompt,
+        "coverImageUrl": finalStory.coverImageUrl,
+        slides: finalStory.slides,
+        "publishedAt": finalStory.publishedAt,
+      }, { onConflict: 'slug' });
 
-    // Add new story to the beginning of the list
-    const updatedStories = [newStorySummary, ...stories.filter(s => s.slug !== slug)];
-    
-    const storiesFilePath = path.join(process.cwd(), 'data', 'stories.json');
-    await fs.writeFile(storiesFilePath, JSON.stringify(updatedStories, null, 2));
+    if (supabaseError) {
+      throw supabaseError;
+    }
 
     // 3. Revalidate homepage cache
     revalidatePath('/');
@@ -73,6 +74,15 @@ export async function publishStoryAction(storyData: StoryContent): Promise<{ suc
     return { success: true, slug };
   } catch (error) {
     console.error("Publishing error:", error);
-    return { success: false, error: (error as Error).message };
+    const errorMessage = (error as Error).message;
+    // Attempt to clean up created directory if db insert fails
+    try {
+        const slug = slugify(storyData.title);
+        const storyDir = path.join(process.cwd(), 'public', 'stories', slug);
+        await fs.rm(storyDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+        console.error("Cleanup error:", cleanupError)
+    }
+    return { success: false, error: errorMessage };
   }
 }
