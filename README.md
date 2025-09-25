@@ -8,19 +8,16 @@ This is a Next.js project that allows users to generate, preview, and publish AM
 - **Live Preview**: Instantly see how your story will look on a mobile device with a live in-app preview.
 - **AMP Story Publishing**: Publish stories as valid AMP pages, making them fast, engaging, and discoverable.
 - **Homepage Gallery**: All published stories are beautifully displayed on the homepage.
-- **Password-Protected Admin**: A secure admin panel to manage story creation.
+- **Admin Panel**: An admin panel to manage story creation.
 - **Embeddable Stories**: Easily copy iframe embed codes to share your stories anywhere.
 
 ## Getting Started
 
 ### Environment Variables
 
-Create a `.env.local` file in the root of your project and add the following environment variables:
+Create a `.env.local` file in the root of your project and add the following environment variable:
 
 ```
-# A secure password to access the /admin panel
-ADMIN_PASSWORD="your_secure_password_here"
-
 # Your Google Gemini API Key
 # You can get one from Google AI Studio: https://aistudio.google.com/app/apikey
 GEMINI_API_KEY="your_gemini_api_key_here"

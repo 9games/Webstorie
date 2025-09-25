@@ -1,6 +1,5 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import fs from 'fs/promises';
 import path from 'path';
@@ -10,29 +9,6 @@ import type { StoryContent, StorySummary } from '@/lib/types';
 import { slugify, hashCode } from '@/lib/utils';
 import { getPublishedStories } from '@/lib/data';
 import { renderAmpStory } from '@/lib/amp-renderer';
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-
-// --- Authentication Actions ---
-export async function login(password: string) {
-  if (password === ADMIN_PASSWORD) {
-    cookies().set('admin-auth', 'true', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 day
-      path: '/',
-    });
-    revalidatePath('/admin');
-    return { success: true };
-  }
-  return { success: false, error: 'Invalid password' };
-}
-
-export async function logout() {
-  cookies().delete('admin-auth');
-  revalidatePath('/admin');
-  return { success: true };
-}
 
 // --- Story Generation Actions ---
 export async function generateStoryAction(input: GenerateStoryContentInput): Promise<StoryContent | null> {
@@ -47,11 +23,6 @@ export async function generateStoryAction(input: GenerateStoryContentInput): Pro
 
 // --- Publishing Action ---
 export async function publishStoryAction(storyData: StoryContent): Promise<{ success: boolean; slug?: string, error?: string }> {
-  const isLoggedIn = cookies().has('admin-auth');
-  if (!isLoggedIn) {
-    return { success: false, error: "Unauthorized" };
-  }
-
   try {
     const slug = slugify(storyData.title);
     const publishedAt = new Date().toISOString();
