@@ -9,7 +9,7 @@ import { generateStoryContent, type GenerateStoryContentInput } from '@/ai/flows
 import type { StoryContent, StorySummary } from '@/lib/types';
 import { slugify, hashCode } from '@/lib/utils';
 import { getPublishedStories } from '@/lib/data';
-import { renderAmpStory } from '@/lib/amp-renderer.tsx';
+import { renderAmpStory } from '@/lib/amp-renderer';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -76,7 +76,7 @@ export async function publishStoryAction(storyData: StoryContent): Promise<{ suc
     // Save full story JSON for potential future use (e.g., editing)
     await fs.writeFile(path.join(storyDir, 'story.json'), JSON.stringify(finalStory, null, 2));
 
-    const ampHtml = await renderAmpStory(finalStory);
+    const ampHtml = renderAmpStory(finalStory);
     await fs.writeFile(path.join(storyDir, 'index.html'), ampHtml);
 
     // 2. Update the main stories.json list
